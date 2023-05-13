@@ -11,5 +11,8 @@
     "url": "git+https://github.com/upatel93/fragments.git"
   },
   "author": "Ujjval Patel",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prettier": "2.8.8"
+  }
 }
