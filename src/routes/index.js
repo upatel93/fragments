@@ -3,7 +3,7 @@
 const express = require('express');
 
 // Our authentication middleware
-const { authenticate } = require('../authentication');
+const { authenticate } = require('../authorization');
 
 // version and author from package.json
 const { version, author } = require('../../package.json');
