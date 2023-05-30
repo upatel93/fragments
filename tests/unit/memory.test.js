@@ -7,7 +7,7 @@ let {
   writeFragmentData,
   listFragments,
   deleteFragment,
-} = require('../../src/data/memory');
+} = require('../../src/model/data/memory');
 
 describe('Fragment Module', () => {
   let ownerId;
