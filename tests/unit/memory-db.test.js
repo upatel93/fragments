@@ -1,6 +1,6 @@
 /* global Buffer */
 
-const MemoryDB = require('../../src/data/memory-db');
+const MemoryDB = require('../../src/data/memory/memory-db');
 
 describe('memory-db', () => {
   let db;
