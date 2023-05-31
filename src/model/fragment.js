@@ -31,7 +31,7 @@ const validTypes = [
 ];
 
 class Fragment {
-  constructor({ id, ownerId, type, size = 0 }) {
+  constructor({ ownerId, type, id, size = 0 }) {
     // removed created and updated paramaters due to eslint.
     if (!ownerId || !type) {
       throw new Error('ownerId and type are required');
