@@ -20,5 +20,20 @@ describe('GET /v1/fragments', () => {
     expect(Array.isArray(res.body.fragments)).toBe(true);
   });
 
+  test('authenticated users get a fragment data with supplied id', async () => {
+    let data = 'Fragment Data';
+    const post = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/plain')
+      .auth('testuser1', 'Testu1@2911')
+      .send(data);
+    let id = post.body.fragment.id;
+    const res = await request(app)
+      .get(`/v1/fragments/${id}`)
+      .auth('testuser1', 'Testu1@2911')
+      .expect(200);
+    expect(await res.text).toBe(data);
+  });
+
   // TODO: we'll need to add tests to check the contents of the fragments array later
 });
