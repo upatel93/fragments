@@ -16,10 +16,17 @@ module.exports = async (req, res) => {
   const expand = req.query.expand;
 
   if (fragmentId) {
-    let fragmentdata = await Fragment.byId(plseaseHashIt(req.user), fragmentId);
-    let data = await fragmentdata.getData();
-    res.set('Content-Type', 'text/plain');
-    res.status(200).send(data);
+    try {
+      let fragmentdata = await Fragment.byId(plseaseHashIt(req.user), fragmentId);
+      let data = await fragmentdata.getData();
+      res.set('Content-Type', data.type);
+      res.status(200).send(data);
+    } catch (error) {
+      res.status(404).json({
+        status: 'error',
+        msg: `Got an ${error}, while requesting fragment with id: ${fragmentId}`,
+      });
+    }
   } else {
     let resp = createSuccessResponse();
     let fragments = await Fragment.byUser(plseaseHashIt(req.user), expand);
