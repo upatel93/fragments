@@ -42,7 +42,7 @@ describe('GET /v1/fragments/:id', () => {
     expect(await res.text).toBe(data);
   });
 
-  it('Authenticated user should receive an error when an invalid ID is provided', async () => {
+  test('Authenticated user should receive an error when an invalid ID is provided', async () => {
     // Test case: Authenticated user should receive an error when an invalid ID is provided
 
     const id = 'invalid id';
@@ -64,7 +64,7 @@ describe('GET /v1/fragments/:id', () => {
 });
 
 describe('GET /v1/fragments?expand', () => {
-  test('should return fragments associated with the user when no expand query parameter is provided', async () => {
+  test('Authenticated users should get fragments array associated with the user when no expand query parameter is provided', async () => {
     // Test case: When no expand query parameter is provided, return fragments associated with the user
     const response = await request(app).get('/v1/fragments').auth('testuser2', 'Testu2@2911');
     expect(response.status).toBe(200);
@@ -72,7 +72,7 @@ describe('GET /v1/fragments?expand', () => {
     expect(Array.isArray(response.body.fragments)).toBe(true);
   });
 
-  test('should return fragments associated with the user when expand query parameter provided 0', async () => {
+  test('Authenticated users should get fragments associated with the user when expand query parameter provided 0', async () => {
     // Test case: When no expand query parameter is provided, return fragments associated with the user
     const response = await request(app)
       .get('/v1/fragments?expand=0')
@@ -82,7 +82,7 @@ describe('GET /v1/fragments?expand', () => {
     expect(Array.isArray(response.body.fragments)).toBe(true);
   });
 
-  test('should return all fragments when expand query parameter is provided', async () => {
+  test('Authenticated users should get all fragments when expand query parameter is provided', async () => {
     // Test case: When expand query parameter is provided, return all fragments
 
     const response = await request(app)
@@ -94,7 +94,7 @@ describe('GET /v1/fragments?expand', () => {
     expect(response.body.fragments).toHaveLength(0);
   });
 
-  test('length of fragments Array should be increased after every post request', async () => {
+  test('The length of fragments Array should be increased after every post request', async () => {
     // Test case: The length of the fragments array should increase after every post request
 
     // Step 1: Check initial state (no fragments)
@@ -139,7 +139,7 @@ describe('GET /v1/fragments?expand', () => {
     expect(response3.body.fragments).toHaveLength(2);
   });
 
-  test('should return fragments associated with the user when expand query parameter provided ', async () => {
+  test('Authenticated users should return fragments associated with the user when expand query parameter provided other than zero i.e. positive integer', async () => {
     // Test case: When no expand query parameter is provided, return fragments associated with the user
 
     const response = await request(app)
@@ -152,7 +152,7 @@ describe('GET /v1/fragments?expand', () => {
     expect(typeof response.body.fragments[0]).toBe('object');
   });
 
-  test('Should return fragments array with strings', async () => {
+  test('Authenticated user should get fragments array with strings without expand query', async () => {
     // Test case: Fragments returned should have id strings
 
     const response = await request(app).get('/v1/fragments').auth('testuser2', 'Testu2@2911');
