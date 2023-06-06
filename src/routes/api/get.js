@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
     try {
       let fragmentdata = await Fragment.byId(plseaseHashIt(req.user), fragmentId);
       let data = await fragmentdata.getData();
-      res.set('Content-Type', data.type);
+      res.set('Content-Type', fragmentdata.type);
       res.status(200).send(data);
     } catch (error) {
       res.status(404).json(createErrorResponse(404,`Got an ${error}, while requesting fragment with id: ${fragmentId}`));

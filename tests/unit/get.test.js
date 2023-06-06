@@ -1,5 +1,8 @@
 // tests/unit/get.test.js
 
+// importing content type
+const contentType = require('content-type');
+
 const request = require('supertest');
 
 const app = require('../../src/app');
@@ -39,6 +42,10 @@ describe('GET /v1/fragments/:id', () => {
       .get(`/v1/fragments/${id}`)
       .auth('testuser1', 'Testu1@2911')
       .expect(200);
+    const expectedContentType = contentType.parse('text/plain').type;
+    const receivedContentType = contentType.parse(res.headers['content-type']).type;
+
+    expect(receivedContentType).toBe(expectedContentType);
     expect(await res.text).toBe(data);
   });
 
