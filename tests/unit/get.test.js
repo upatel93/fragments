@@ -51,7 +51,8 @@ describe('GET /v1/fragments/:id', () => {
 
     expect(response.status).toBe(404);
     expect(response.body.status).toBe('error');
-    expect(response.body.msg).toBe(
+    expect(response.body.error.code).toBe(404);
+    expect(response.body.error.message).toBe(
       `Got an Error: Not Found, while requesting fragment with id: ${id}`
     );
   });
