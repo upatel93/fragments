@@ -6,30 +6,44 @@ const { createSuccessResponse, createErrorResponse } = require('../../response')
 const { Fragment } = require('../../model/fragment');
 
 // Hashing MOdule import
-const plseaseHashIt = require('../../hash');
+const hashUser = require('../../hash');
 
-/**
- * Get a list of fragments for the current user
- */
-module.exports = async (req, res) => {
+
+async function getFragmentById(req, res) {
   const fragmentId = req.params.id;
+
+  try {
+    let fragmentData = await Fragment.byId(hashUser(req.user), fragmentId);
+    let data = await fragmentData.getData();
+    res.set('Content-Type', fragmentData.type);
+    res.status(200).send(data);
+  } catch (error) {
+    res
+      .status(404)
+      .json(
+        createErrorResponse(
+          404,
+          `Got an ${error}, while requesting fragment with id: ${fragmentId}`
+        )
+      );
+  }
+}
+
+async function getFragmentsByUser(req, res) {
   const expand = req.query.expand;
 
-  if (fragmentId) {
-    try {
-      let fragmentdata = await Fragment.byId(plseaseHashIt(req.user), fragmentId);
-      let data = await fragmentdata.getData();
-      res.set('Content-Type', fragmentdata.type);
-      res.status(200).send(data);
-    } catch (error) {
-      res.status(404).json(createErrorResponse(404,`Got an ${error}, while requesting fragment with id: ${fragmentId}`));
-    }
-  } else {
-    let resp = createSuccessResponse();
-    let fragments = await Fragment.byUser(plseaseHashIt(req.user), expand);
-    res.status(200).json({
-      status: resp.status,
-      fragments: fragments,
-    });
+  try {
+    let fragments = await Fragment.byUser(hashUser(req.user), expand);
+    res.status(200).json(createSuccessResponse({ fragments: fragments }));
+  } catch (error) {
+    res
+      .status(500)
+      .json(createErrorResponse(500, `An error occurred: ${error}`));
   }
+}
+
+
+module.exports = {
+  getFragmentById,
+  getFragmentsByUser,
 };

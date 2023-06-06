@@ -27,16 +27,15 @@ router.use(`/v1`, authenticate(), require('./api'));
 router.get('/', (req, res) => {
   // Client's shouldn't cache this response (always request it fresh)
   res.setHeader('Cache-Control', 'no-cache');
-  // Send a 200 'OK' response
-  let resp = createSuccessResponse();
 
-  res.status(200).json({
-    status: resp.status,
-    author,
-    // Use your own GitHub URL for this...
-    githubUrl: 'https://github.com/upatel93/fragments',
-    version,
-  });
+  // Send a 200 'OK' response
+  res.status(200).json(
+    createSuccessResponse({
+      author,
+      githubUrl: 'https://github.com/upatel93/fragments',
+      version,
+    })
+  );
 });
 
 module.exports = router;
