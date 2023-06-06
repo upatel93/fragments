@@ -1,6 +1,6 @@
 // src/routes/api/get.js
 
-const { createSuccessResponse } = require('../../response');
+const { createSuccessResponse, createErrorResponse } = require('../../response');
 
 //importing Fragment class..
 const { Fragment } = require('../../model/fragment');
@@ -22,10 +22,7 @@ module.exports = async (req, res) => {
       res.set('Content-Type', data.type);
       res.status(200).send(data);
     } catch (error) {
-      res.status(404).json({
-        status: 'error',
-        msg: `Got an ${error}, while requesting fragment with id: ${fragmentId}`,
-      });
+      res.status(404).json(createErrorResponse(404,`Got an ${error}, while requesting fragment with id: ${fragmentId}`));
     }
   } else {
     let resp = createSuccessResponse();
