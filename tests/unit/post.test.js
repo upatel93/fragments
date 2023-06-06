@@ -1,5 +1,5 @@
 // tests/unit/get.test.js
-/* global process */
+/* global process Buffer*/
 
 const request = require('supertest');
 
@@ -28,9 +28,24 @@ describe('POST /v1/fragments', () => {
       expect(res.body.fragment.id).toBeDefined();
       expect(res.body.fragment.ownerId).toBeDefined();
       expect(res.body.fragment.type).toBe('text/plain');
-      expect(res.body.fragment.size).toBe(1);
+      expect(res.body.fragment.size).toBe(Buffer.byteLength('fragment Data'));
       expect(res.body.fragment.created).toBeDefined();
       expect(res.body.fragment.updated).toBeDefined();
       expect(res.headers.location).toBe(`${process.env.API_URL}/v1/fragment/${res.body.fragment.id}`);
+  });
+
+  // Using a valid username/password pair with unsupported mediatype should get 415 error
+  test('authenticated users get with unsupported mediatype should get 415 error', async () => {
+    let type = 'image/png';
+    const res = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', type)
+      .auth('testuser1', 'Testu1@2911')
+      .send('fragment Data');
+
+      expect(res.statusCode).toBe(415);
+      expect(res.body.status).toBe('error');
+      expect(res.body.error.code).toBe(415);
+      expect(res.body.error.message).toBe(`We do not do not support ${type}`);
   });
 });

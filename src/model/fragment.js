@@ -54,7 +54,7 @@ class Fragment {
     }
 
     if (!validTypes.includes(contentType.parse(type).type)) {
-      throw new Error('only valid types can be set');
+      throw new Error(`We do not do not support ${contentType.parse(type).type}`);
     }
 
     // Set properties
@@ -126,7 +126,7 @@ class Fragment {
    */
   async setData(data) {
     if (!(Buffer.isBuffer(data) || data)) throw new Error('supplied data is not Buffer');
-    this.size++;
+    this.size = data.byteLength;
     this.updated = new Date().toISOString();
     return writeFragmentData(this.ownerId, this.id, data);
   }
