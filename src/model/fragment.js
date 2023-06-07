@@ -60,11 +60,11 @@ class Fragment {
     // Set properties
     this.id = id || randomUUID(); // If id is not provided, we will create randomUUID
     this.ownerId = ownerId;
-    this.type = type;
-    this.size = size;
     // created and updated are removed from paramaters but its part of fragment class.
     this.created = new Date().toISOString(); // setting date string
     this.updated = new Date().toISOString();
+    this.type = type;
+    this.size = size;
   }
 
   /**
