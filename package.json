@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/upatel93/fragments.git"
   },
-  "author": "Ujjval Patel",
+  "author": "Ujjval Patel <upatel69@myseneca.ca>",
   "license": "UNLICENSED",
   "devDependencies": {
     "eslint": "^8.40.0",
