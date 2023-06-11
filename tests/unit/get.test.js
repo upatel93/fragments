@@ -60,7 +60,7 @@ describe('GET /v1/fragments/:id', () => {
     expect(response.body.status).toBe('error');
     expect(response.body.error.code).toBe(404);
     expect(response.body.error.message).toBe(
-      `Got an Error: Not Found, while requesting fragment with id: ${id}`
+      `Fragment with ID '${id}' does not exist.`
     );
   });
 
@@ -70,6 +70,67 @@ describe('GET /v1/fragments/:id', () => {
     return request(app).get('/v1/fragments/:id').expect(401);
   });
 });
+
+describe('GET /v1/fragments/:id/info', () => {
+  test('Authenticated users should be able to get a fragment Metadata', async () => {
+    // Test case: Authenticated users should be able to get fragment metadata with the supplied ID
+
+    // Step 1: Create a fragment by making a POST request
+    const data = 'Fragment Data';
+    const postResponse = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/plain')
+      .auth('testuser1', 'Testu1@2911')
+      .send(data);
+    const id = postResponse.body.fragment.id;
+    const ownerId = postResponse.body.fragment.ownerId;
+    const size = postResponse.body.fragment.size;
+    const created = postResponse.body.fragment.created;
+    const updated = postResponse.body.fragment.updated;
+
+    // Step 2: Get the fragment Metadata by ID
+    const response = await request(app)
+      .get(`/v1/fragments/${id}/info`)
+      .auth('testuser1', 'Testu1@2911')
+      .expect(200);
+
+    expect(response.body.status).toBe('ok');
+    expect(response.body.fragment.id).toBe(id);
+    expect(response.body.fragment.ownerId).toBe(ownerId);
+    expect(response.body.fragment.created).toBe(created);
+    expect(response.body.fragment.updated).toBe(updated);
+    expect(response.body.fragment.type).toBe('text/plain');
+    expect(response.body.fragment.size).toBe(size);
+  });
+
+  test('Authenticated user should receive an error when an invalid ID is provided', async () => {
+    // Test case: Authenticated user should receive an error when an invalid ID is provided
+
+    const id = 'invalid-id';
+
+    const response = await request(app)
+      .get(`/v1/fragments/${id}/info`)
+      .auth('testuser1', 'Testu1@2911')
+      .expect(404);
+
+    expect(response.body.status).toBe('error');
+    expect(response.body.error.code).toBe(404);
+    expect(response.body.error.message).toBe(`Fragment with ID '${id}' does not exist.`);
+  });
+
+  test('Unauthenticated requests are denied', async () => {
+    // Test case: Unauthenticated requests should be denied (return 401 Unauthorized)
+
+    const response = await request(app)
+      .get('/v1/fragments/:id/info')
+      .expect(401);
+
+    expect(response.body.status).toBe('error');
+    expect(response.body.error.code).toBe(401);
+    expect(response.body.error.message).toBe('Unauthorized');
+  });
+});
+
 
 describe('GET /v1/fragments?expand', () => {
   // Test case: Authenticated users should get fragments array associated with the user when no expand query parameter is provided

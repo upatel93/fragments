@@ -8,25 +8,63 @@ const { Fragment } = require('../../model/fragment');
 // Hashing MOdule import
 const hashUser = require('../../hash');
 
+// importing Utils Functions.
+const {
+  hasExtension,
+  separateIdExtensionAndMediaType,
+  isConversionPossible,
+} = require('../../model/data/utils');
 
 async function getFragmentById(req, res) {
   const fragmentId = req.params.id;
 
   try {
-    let fragmentData = await Fragment.byId(hashUser(req.user), fragmentId);
-    let data = await fragmentData.getData();
-    res.set('Content-Type', fragmentData.type);
-    res.status(200).send(data);
+    if (hasExtension(fragmentId)) {
+      await handleFragmentWithExtension(fragmentId, req, res);
+    } else {
+      await handleFragmentWithoutExtension(fragmentId, req, res);
+    }
   } catch (error) {
-    res
-      .status(404)
-      .json(
-        createErrorResponse(
-          404,
-          `Got an ${error}, while requesting fragment with id: ${fragmentId}`
-        )
-      );
+    handleErrorResponse(
+      res,
+      404,
+      `Fragment with ID '${
+        hasExtension(fragmentId) ? separateIdExtensionAndMediaType(fragmentId).id : fragmentId
+      }' does not exist.`
+    );
   }
+}
+
+async function handleFragmentWithExtension(fragmentId, req, res) {
+  const { id, extension, mediaType } = separateIdExtensionAndMediaType(fragmentId);
+  let fragment = await Fragment.byId(hashUser(req.user), id);
+
+  try {
+    if (isConversionPossible(fragment.type, mediaType)) {
+      let data = await fragment.getData();
+      res.set('Content-Type', fragment.type);
+      res.status(200).send(data);
+    } else {
+      let errorMessage = mediaType
+        ? `The requested conversion from Media Type '${fragment.type}' to '${mediaType}' is not possible.`
+        : `The requested conversion from Media Type '${fragment.type}' to extension '.${extension}' is not possible.`;
+      handleErrorResponse(res, 415, errorMessage);
+    }
+  } catch (error) {
+    // eror can  occure during conversion thus need to handle it
+    res.status(500).json(createErrorResponse(500, `An error occurred: ${error}`));
+  }
+}
+
+async function handleFragmentWithoutExtension(fragmentId, req, res) {
+  let fragment = await Fragment.byId(hashUser(req.user), fragmentId);
+  let data = await fragment.getData();
+  res.set('Content-Type', fragment.type);
+  res.status(200).send(data);
+}
+
+function handleErrorResponse(res, statusCode, errorMessage) {
+  res.status(statusCode).json(createErrorResponse(statusCode, errorMessage));
 }
 
 async function getFragmentsByUser(req, res) {
@@ -36,14 +74,25 @@ async function getFragmentsByUser(req, res) {
     let fragments = await Fragment.byUser(hashUser(req.user), expand);
     res.status(200).json(createSuccessResponse({ fragments: fragments }));
   } catch (error) {
-    res
-      .status(500)
-      .json(createErrorResponse(500, `An error occurred: ${error}`));
+    res.status(500).json(createErrorResponse(500, `An error occurred: ${error}`));
   }
 }
 
+async function getFragmentInfoById(req, res) {
+  const fragmentId = req.params.id;
+
+  try {
+    let fragment = await Fragment.byId(hashUser(req.user), fragmentId);
+    res.status(200).json(createSuccessResponse({ fragment: fragment }));
+  } catch (error) {
+    res
+      .status(404)
+      .json(createErrorResponse(404, `Fragment with ID '${fragmentId}' does not exist.`));
+  }
+}
 
 module.exports = {
   getFragmentById,
   getFragmentsByUser,
+  getFragmentInfoById,
 };
