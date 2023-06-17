@@ -4,6 +4,7 @@
 const { createErrorResponse, createSuccessResponse } = require('../../response');
 const { Fragment } = require('../../model/fragment');
 const hashUser = require('../../hash');
+const { validateContentType } = require('../../model/data/utils');
 
 // Handler function for creating a new fragment
 async function createFragment(req, res) {
@@ -14,6 +15,9 @@ async function createFragment(req, res) {
 
     // Create a new fragment object with owner ID and content type
     let data = new Fragment({ ownerId, type: contentType });
+
+    // To check if the content type is valid
+    await validateContentType(req.body, contentType);
 
     // Save the fragment object and set data
     await data.save();

@@ -13,6 +13,7 @@ const {
   hasExtension,
   separateIdExtensionAndMediaType,
   isConversionPossible,
+  convertFragment,
 } = require('../../model/data/utils');
 
 async function getFragmentById(req, res) {
@@ -40,10 +41,11 @@ async function handleFragmentWithExtension(fragmentId, req, res) {
   let fragment = await Fragment.byId(hashUser(req.user), id);
 
   try {
-    if (isConversionPossible(fragment.type, mediaType)) {
+    if (isConversionPossible(fragment.type, extension)) {
       let data = await fragment.getData();
-      res.set('Content-Type', fragment.type);
-      res.status(200).send(data);
+      const convertedData = await convertFragment(data,fragment.type,extension,mediaType)
+      res.set('Content-Type', mediaType);
+      res.status(200).send(convertedData);
     } else {
       let errorMessage = mediaType
         ? `The requested conversion from Media Type '${fragment.type}' to '${mediaType}' is not possible.`
