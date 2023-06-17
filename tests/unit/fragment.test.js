@@ -21,6 +21,17 @@ const validTypes = [
   */
 ];
 
+const formats = {
+  'text/plain': ['text/plain'],
+  'text/markdown': ['text/markdown', 'text/html', 'text/plain'],
+  'text/html': ['text/html', 'text/plain'],
+  'application/json': ['application/json', 'text/plain'],
+  'image/png': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/jpeg': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/webp': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/gif': ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+};
+
 describe('Fragment class', () => {
   test('common formats are supported', () => {
     validTypes.forEach((format) => expect(Fragment.isSupportedType(format)).toBe(true));
@@ -179,6 +190,17 @@ describe('Fragment class', () => {
         size: 0,
       });
       expect(fragment.formats).toEqual(['text/plain']);
+    });
+
+    Object.entries(formats).forEach(([fragmentType, expectedFormats]) => {
+      test(`formats returns the expected supported formats for the fragment type "${fragmentType}"`, () => {
+        const fragment =  new Fragment({
+          ownerId: '1234',
+          type: fragmentType,
+          size: 0,
+        });
+        expect(fragment.formats).toEqual(expectedFormats);
+      });
     });
   });
 

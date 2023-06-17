@@ -17,9 +17,6 @@ const {
 
 const validTypes = [
   `text/plain`,
-  /*
-   Currently, only text/plain is supported. Others will be added later.
-
   `text/markdown`,
   `text/html`,
   `application/json`,
@@ -27,8 +24,18 @@ const validTypes = [
   `image/jpeg`,
   `image/webp`,
   `image/gif`,
-  */
 ];
+
+const formats = {
+  'text/plain': ['text/plain'],
+  'text/markdown': ['text/markdown', 'text/html', 'text/plain'],
+  'text/html': ['text/html', 'text/plain'],
+  'application/json': ['application/json', 'text/plain'],
+  'image/png': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/jpeg': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/webp': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+  'image/gif': ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+};
 
 class Fragment {
   constructor({ ownerId, type, id, size = 0 }) {
@@ -154,7 +161,8 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    return validTypes;
+    // the false condition wont be executed as unsupported type isnt stored in constructor but just for debug purpose.
+    return formats[this.mimeType] ? formats[this.mimeType] : [];
   }
 
   /**
