@@ -43,7 +43,7 @@ async function handleFragmentWithExtension(fragmentId, req, res) {
   try {
     if (isConversionPossible(fragment.type, extension)) {
       let data = await fragment.getData();
-      const convertedData = await convertFragment(data,fragment.type,extension,mediaType)
+      const convertedData = await convertFragment(data, fragment.type, extension, mediaType);
       res.set('Content-Type', mediaType);
       res.status(200).send(convertedData);
     } else {
@@ -71,7 +71,6 @@ function handleErrorResponse(res, statusCode, errorMessage) {
 
 async function getFragmentsByUser(req, res) {
   const expand = req.query.expand;
-
   try {
     let fragments = await Fragment.byUser(hashUser(req.user), expand);
     res.status(200).json(createSuccessResponse({ fragments: fragments }));
@@ -84,7 +83,11 @@ async function getFragmentInfoById(req, res) {
   const fragmentId = req.params.id;
 
   try {
-    let fragment = await Fragment.byId(hashUser(req.user), fragmentId);
+    let fragment;
+    if(hasExtension(fragmentId)){
+      const { id } = separateIdExtensionAndMediaType(fragmentId);
+      fragment = await Fragment.byId(hashUser(req.user), id);
+    }else fragment = await Fragment.byId(hashUser(req.user), fragmentId);
     res.status(200).json(createSuccessResponse({ fragment: fragment }));
   } catch (error) {
     res

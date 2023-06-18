@@ -14,22 +14,28 @@ const contentType = require('content-type');
 // Fragment Class
 const { Fragment } = require('../../model/fragment');
 
+// Import route handlers
+const getHandlers = require('./get');
+const postHandlers = require('./post');
+
 
 // GET Routes
 
-// Define our first route, which will be: GET /v1/fragments
-router.get('/fragments', require('./get').getFragmentsByUser);
+// Define GET /v1/fragments
+// Route to get fragments by user
+router.get('/fragments', getHandlers.getFragmentsByUser);
 
-// Define GET /v1/fragments/:id i.e with id parameter.
-router.get('/fragments/:id', require('./get').getFragmentById);
+// Define GET /v1/fragments/:id
+// Route to get a fragment by its ID
+router.get('/fragments/:id', getHandlers.getFragmentById);
 
-// Define GET /v1/fragments/:id/info to Get the Metadata of fragment
-router.get('/fragments/:id/info',require('./get').getFragmentInfoById);
-
-
+// Define GET /v1/fragments/:id/info
+// Route to get metadata of a fragment by its ID
+router.get('/fragments/:id/info', getHandlers.getFragmentInfoById);
 
 
 // Post routes
+
 // Support sending various Content-Types on the body up to 5M in size
 const rawBody = () =>
   express.raw({
@@ -46,8 +52,8 @@ const rawBody = () =>
 
 // Use a raw body parser for POST, which will give a `Buffer` Object or `{}` at `req.body`
 // You can use Buffer.isBuffer(req.body) to test if it was parsed by the raw body parser.
-router.post('/fragments', rawBody(), require('./post').createFragment);
+router.post('/fragments', rawBody(), postHandlers.createFragment);
 
-// Other routes will go here later on...
+
 
 module.exports = router;
