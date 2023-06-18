@@ -113,23 +113,15 @@ module.exports.hasExtension = (id) => {
 };
 
 /**
- * Set's the fragment's data in the database
- * @param {Buffer} data
- * @returns string
- */
-module.exports.rawJSONtoTextPlain = (rawData) => {
-  return rawData.toString('utf8');
-};
-
-/**
  * Converts a fragment from Markdown to HTML.
  * @param {Buffer|string} rawData - The raw binary data of the fragment.
  * @returns {string} - The converted HTML.
  */
-function convertMarkdownToHTML(rawData) {
+module.exports.convertMarkdownToHTML = async function (rawData) {
+  if (!rawData) return '';
   const markdownData = rawData instanceof Buffer ? rawData.toString() : rawData;
-  return markdownIt.render(markdownData);
-}
+  return await markdownIt.render(markdownData);
+};
 
 /**
  * Converts a fragment from HTML or Markdown to plain text.
@@ -137,14 +129,15 @@ function convertMarkdownToHTML(rawData) {
  * @param {string} fromType - The type of the fragment to convert from.
  * @returns {string} - The converted plain text.
  */
-function convertToPlainText(rawData, fromType) {
+module.exports.convertToPlainText = async function (rawData, fromType) {
+  if (!rawData) return '';
   let data = rawData instanceof Buffer ? rawData.toString() : rawData;
   if (fromType === 'text/html') {
-    return data.replace(/<[^>]+>/g, '');
+    return await data.replace(/<[^>]+>/g, '');
   } else if (fromType === 'text/markdown') {
-    return markdownIt.render(data).replace(/<[^>]+>/g, '');
-  }
-}
+    return await markdownIt.render(data).replace(/<[^>]+>/g, '');
+  } else return '';
+};
 
 /**
  * Converts a fragment from JSON to plain text.
@@ -152,14 +145,14 @@ function convertToPlainText(rawData, fromType) {
  * @returns {string} - The converted plain text.
  * @throws {Error} - Throws an error if the conversion fails.
  */
-function convertJSONToText(rawData) {
+module.exports.convertJSONToText = function (rawData) {
   try {
     const jsonData = JSON.parse(rawData);
     return JSON.stringify(jsonData, null, 2);
   } catch (error) {
     throw new Error('Failed to convert JSON to plain text');
   }
-}
+};
 
 /**
  * Converts a fragment from one image format to another.
@@ -167,11 +160,11 @@ function convertJSONToText(rawData) {
  * @param {string} toExt - The extension representing the desired conversion type.
  * @returns {Buffer} - The converted image buffer.
  */
-async function convertImageFormat(rawData, toExt) {
+module.exports.convertImageFormat = async function (rawData, toExt) {
   const image = sharp(rawData);
   image.toFormat(toExt);
   return await image.toBuffer();
-}
+};
 
 /**
  * Converts a fragment from one type to another based on the provided extension.
@@ -183,16 +176,16 @@ async function convertImageFormat(rawData, toExt) {
  */
 module.exports.convertFragment = async (rawBinaryData, fromType, toExt, toType) => {
   if (fromType === 'text/markdown' && toExt === 'html') {
-    return convertMarkdownToHTML(rawBinaryData);
+    return await module.exports.convertMarkdownToHTML(rawBinaryData);
   } else if ((fromType === 'text/html' || fromType === 'text/markdown') && toExt === 'txt') {
-    return convertToPlainText(rawBinaryData, fromType);
+    return await module.exports.convertToPlainText(rawBinaryData, fromType);
   } else if (fromType === 'application/json' && toExt === 'txt') {
-    return convertJSONToText(rawBinaryData);
+    return await module.exports.convertJSONToText(rawBinaryData);
   } else if (
     fromType.startsWith('image/') &&
     ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(toExt)
   ) {
-    return await convertImageFormat(rawBinaryData, toExt);
+    return await module.exports.convertImageFormat(rawBinaryData, toExt);
   } else if (fromType === toType) {
     return rawBinaryData;
   } else {
@@ -200,18 +193,40 @@ module.exports.convertFragment = async (rawBinaryData, fromType, toExt, toType) 
   }
 };
 
+/**
+ * Validates the content type of a request body.
+ * @param {Buffer} reqBody - The request body as a Buffer.
+ * @param {string} contentTypeHeader - The Content-Type header of the request.
+ * @throws {Error} If the content type is not supported or if the input is invalid.
+ * @returns {Promise<void>} Resolves if the content type is valid.
+ */
 module.exports.validateContentType = async (reqBody, contentTypeHeader) => {
-  const { type } = contentType.parse(contentTypeHeader);
+  if (!Buffer.isBuffer(reqBody)) {
+    throw new Error('Invalid request body. Expected a Buffer.');
+  }
+
+  if (typeof contentTypeHeader !== 'string') {
+    throw new Error('Invalid content type header. Expected a string.');
+  }
+
+  const { type } = contentType.parse(contentTypeHeader.toLowerCase());
 
   if (type === 'application/json') {
-    JSON.parse(reqBody);
-    return;
+    try {
+      JSON.parse(reqBody.toString());
+    } catch (error) {
+      throw new Error('Invalid JSON format.');
+    }
   } else if (type.includes('image')) {
-    await sharp(reqBody).metadata();
-    return;
-  } else if (type === 'text/html' || type === 'text/plain' || type === 'text/markdown') {
+    try {
+      await sharp(reqBody).metadata();
+    } catch (error) {
+      throw new Error('Invalid image format.');
+    }
+  } else if (['text/html', 'text/plain', 'text/markdown'].includes(type)) {
+    // No additional validation required for these content types.
     return;
   } else {
-    throw new Error('Unsupported content type');
+    throw new Error('Unsupported content type.');
   }
 };

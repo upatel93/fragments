@@ -61,7 +61,7 @@ class Fragment {
     }
 
     if (!validTypes.includes(contentType.parse(type).type)) {
-      throw new Error(`We do not do not support ${contentType.parse(type).type}`);
+      throw new Error(`The requested '${contentType.parse(type).type}' MIME type is not supported yet.`);
     }
 
     // Set properties
