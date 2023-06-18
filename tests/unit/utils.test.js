@@ -403,4 +403,31 @@ describe('validateContentType', () => {
     await expect(validateContentType(reqBody, 'text/plain')).resolves.toBeUndefined();
   });
 
+  test('should throw an error if request body is not a Buffer', async () => {
+    const reqBody = 'invalidRequest';
+    const contentTypeHeader = 'application/json';
+
+    await expect(
+      validateContentType(reqBody, contentTypeHeader)
+    ).rejects.toThrow(Error);
+  });
+
+  test('should throw an error if content type header is not a string', async () => {
+    const reqBody = Buffer.from('validRequestBody');
+    const contentTypeHeader = 12345;
+
+   await expect(
+  validateContentType(reqBody, contentTypeHeader)
+    ).rejects.toThrow(Error);
+  });
+
+  test('should not throw any error if request body is a Buffer and content type header is a string', async () => {
+    const reqBody = Buffer.from('validRequestBody');
+    const contentTypeHeader = 'text/plain';
+
+    await expect(
+      validateContentType(reqBody, contentTypeHeader)
+    ).resolves.toBeUndefined();
+  });
+
 });
