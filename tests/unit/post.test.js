@@ -1,51 +1,162 @@
 // tests/unit/get.test.js
-/* global process Buffer*/
+/* global process Buffer __dirname*/
 
 const request = require('supertest');
 
 const app = require('../../src/app');
+const fs = require('fs');
+const path = require('path');
 
-describe('POST /v1/fragments', () => {
+const imageExtensions = ['png', 'jpg', 'webp', 'gif'];
+
+describe('POST /v1/fragments (Credential, Unauthorized, Unauthenticated, Plain Text Creation)', () => {
   // If the request is missing the Authorization header, it should be forbidden
-  test('unauthenticated requests are denied', () => request(app).post('/v1/fragments').expect(401));
+  test('Unauthenticated requests are denied', () => request(app).post('/v1/fragments').expect(401));
 
   // If the wrong username/password pair are used (no such user), it should be forbidden
-  test('incorrect credentials are denied', () =>
+  test('Incorrect credentials are denied', () =>
     request(app).get('/v1/fragments').auth('invalid@email.com', 'incorrect_password').expect(401));
 
   // Using a valid username/password pair should give a success result with a .fragments array
-  test('authenticated users get a fragment with ok status', async () => {
+  test('Authenticated users get a fragment with ok status', async () => {
     const res = await request(app)
       .post('/v1/fragments')
       .set('Content-Type', 'text/plain')
       .auth('testuser1', 'Testu1@2911')
       .send('fragment Data');
 
-      expect(res.statusCode).toBe(201);
-      expect(res.body.status).toBe('ok');
-      expect(res.body.fragment).toBeDefined();
-      expect(typeof res.body.fragment).toBe('object');
-      expect(res.body.fragment.id).toBeDefined();
-      expect(res.body.fragment.ownerId).toBeDefined();
-      expect(res.body.fragment.type).toBe('text/plain');
-      expect(res.body.fragment.size).toBe(Buffer.byteLength('fragment Data'));
-      expect(res.body.fragment.created).toBeDefined();
-      expect(res.body.fragment.updated).toBeDefined();
-      expect(res.headers.location).toBe(`${process.env.API_URL}/v1/fragment/${res.body.fragment.id}`);
+    expect(res.statusCode).toBe(201);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.fragment).toBeDefined();
+    expect(typeof res.body.fragment).toBe('object');
+    expect(res.body.fragment.id).toBeDefined();
+    expect(res.body.fragment.ownerId).toBeDefined();
+    expect(res.body.fragment.type).toBe('text/plain');
+    expect(res.body.fragment.size).toBe(Buffer.byteLength('fragment Data'));
+    expect(res.body.fragment.created).toBeDefined();
+    expect(res.body.fragment.updated).toBeDefined();
+    expect(res.headers.location).toBe(`${process.env.API_URL}/v1/fragment/${res.body.fragment.id}`);
   });
 
   // Using a valid username/password pair with unsupported mediatype should get 415 error
-  test('authenticated users get with unsupported mediatype should get 415 error', async () => {
-    let type = 'image/png';
+  test('Authenticated users with unsupported mediatype should get 415 error', async () => {
+    let type = 'unsupported/unsupported';
     const res = await request(app)
       .post('/v1/fragments')
       .set('Content-Type', type)
       .auth('testuser1', 'Testu1@2911')
       .send('fragment Data');
 
-      expect(res.statusCode).toBe(415);
-      expect(res.body.status).toBe('error');
-      expect(res.body.error.code).toBe(415);
-      expect(res.body.error.message).toBeDefined();
+    expect(res.statusCode).toBe(415);
+    expect(res.body.status).toBe('error');
+    expect(res.body.error.code).toBe(415);
+    expect(res.body.error.message).toBeDefined();
+  });
+});
+
+describe('POST /v1/fragments (Texts - JSON, HTML, Markdown)', () => {
+  test('Authorized user should create a fragment with content type application/json', async () => {
+    const jsonString = JSON.stringify(
+      {
+        name: 'test',
+        age: 20,
+        marks: 55.2244,
+      },
+      null,
+      2
+    );
+
+    const response = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'application/json')
+      .auth('testuser1', 'Testu1@2911')
+      .send(jsonString);
+
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('ok');
+    expect(response.body.fragment.id).toBeDefined();
+    expect(response.body.fragment.type).toBe('application/json');
+  });
+
+  test('Authorized user should get an Error response with content type application/json and invalid json', async () => {
+    const response = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'application/json')
+      .auth('testuser1', 'Testu1@2911')
+      .send('invalidJson');
+
+    expect(response.status).toBe(415);
+    expect(response.body.status).toBe('error');
+    expect(response.body.error.code).toBe(415);
+    expect(response.body.error.message).toBeDefined();
+  });
+
+  test('Authorized user should create a fragment with content type text/html', async () => {
+    const html = '<h1>Hello World</h1><p>This is Paragraph</p>';
+
+    const response = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/html')
+      .auth('testuser1', 'Testu1@2911')
+      .send(html);
+
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('ok');
+    expect(response.body.fragment.id).toBeDefined();
+    expect(response.body.fragment.type).toBe('text/html');
+  });
+
+  test('Authorized user should create a fragment with content type text/markdown', async () => {
+    const markdown = '### Hello World \n\n ## New Heading \n **dskdajsk** ';
+
+    const response = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/markdown')
+      .auth('testuser1', 'Testu1@2911')
+      .send(markdown);
+
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('ok');
+    expect(response.body.fragment.id).toBeDefined();
+    expect(response.body.fragment.type).toBe('text/markdown');
+  });
+});
+
+describe('POST /v1/fragments (Images - PNG, JPG/JPEG, GIF, WEBP)', () => {
+  imageExtensions.forEach((ext) => {
+    test(`Authorized user should create a fragment with content type image/${ext}`, async () => {
+      const imagePath = path.join(__dirname, `../images/test.${ext}`);
+      const imageBuffer = fs.readFileSync(imagePath);
+
+      if (ext === 'jpg') ext = 'jpeg';
+
+      const response = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', `image/${ext}`)
+        .auth('testuser1', 'Testu1@2911')
+        .send(imageBuffer);
+
+      expect(response.status).toBe(201);
+      expect(response.body.status).toBe('ok');
+      expect(response.body.fragment.id).toBeDefined();
+      expect(response.body.fragment.type).toBe(`image/${ext}`);
+    });
+  });
+
+  imageExtensions.forEach((ext) => {
+    test(`Authorized user should get an Error when tries to create invalid image content and content type image/${ext}`, async () => {
+      if (ext === 'jpg') ext = 'jpeg';
+
+      const response = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', `image/${ext}`)
+        .auth('testuser1', 'Testu1@2911')
+        .send('invalid');
+
+      expect(response.status).toBe(415);
+      expect(response.body.status).toBe('error');
+      expect(response.body.error.code).toBe(415);
+      expect(response.body.error.message).toBeDefined();
+    });
   });
 });
