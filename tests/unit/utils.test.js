@@ -9,6 +9,7 @@ const {
   convertJSONToText,
   convertImageFormat,
   validateContentType,
+  convertFragment
 } = require('../../src/model/data/utils');
 
 const markdownIt = require('markdown-it')();
@@ -430,4 +431,17 @@ describe('validateContentType', () => {
     ).resolves.toBeUndefined();
   });
 
+});
+
+describe('convertFragment - Othr tests are in GET', () =>{
+  test('throws an error for unsupported conversion', async () => {
+    const rawBinaryData = Buffer.from('your data'); // Provide raw binary data as needed
+    const fromType = 'text/plain'; // Provide an unsupported "fromType"
+    const toExt = 'pdf'; // Provide an unsupported "toExt"
+    const toType = 'application/pdf'; // Provide an unsupported "toType"
+  
+    await expect(async () => {
+      await convertFragment(rawBinaryData, fromType, toExt, toType);
+    }).rejects.toThrow('Unsupported conversion');
+  });
 });
