@@ -1,4 +1,5 @@
 // tests/unit/get.test.js
+/* global __dirname*/
 
 // importing content type
 const contentType = require('content-type');
@@ -6,6 +7,9 @@ const contentType = require('content-type');
 const request = require('supertest');
 
 const app = require('../../src/app');
+
+const fs = require('fs');
+const path = require('path');
 
 describe('GET /v1/fragments', () => {
   // If the request is missing the Authorization header, it should be forbidden
@@ -59,15 +63,377 @@ describe('GET /v1/fragments/:id', () => {
     expect(response.status).toBe(404);
     expect(response.body.status).toBe('error');
     expect(response.body.error.code).toBe(404);
-    expect(response.body.error.message).toBe(
-      `Fragment with ID '${id}' does not exist.`
-    );
+    expect(response.body.error.message).toBe(`Fragment with ID '${id}' does not exist.`);
   });
 
   test('unauthenticated requests are denied', () => {
     // Test case: Unauthenticated requests should be denied (return 401 Unauthorized)
 
     return request(app).get('/v1/fragments/:id').expect(401);
+  });
+});
+
+describe('GET /v1/fragments/:id.ext  (Text, JSON, HTML, Markdown)', () => {
+  describe('Text Fragment Conversion', () => {
+    test('Text cannot be converted to other Formats - Returns 415 Unsupported Media Type', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const data = 'Fragment Data';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/plain')
+        .auth('testuser1', 'Testu1@2911')
+        .send(data);
+
+      const id = postResponse.body.fragment.id;
+
+      const unsupportedFormats = ['html', 'md', 'json', 'png', 'jpg', 'gif', 'webp', 'unsupported'];
+
+      await Promise.all(
+        unsupportedFormats.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(415);
+
+          expect(response.body.status).toBe('error');
+          expect(response.body.error.code).toBe(415);
+          expect(response.body.error.message).toBeDefined();
+        })
+      );
+    });
+
+    test('Text can be converted to ".txt" ', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const data = 'Fragment Data';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/plain')
+        .auth('testuser1', 'Testu1@2911')
+        .send(data);
+
+      const id = postResponse.body.fragment.id;
+
+      const extensions = ['txt'];
+
+      await Promise.all(
+        extensions.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(200);
+
+          expect(response.body).toBeDefined();
+
+          const expectedContentType = contentType.parse('text/plain').type;
+          const receivedContentType = contentType.parse(response.headers['content-type']).type;
+
+          expect(receivedContentType).toBe(expectedContentType);
+        })
+      );
+    });
+  });
+
+  describe('JSON Fragment Conversion', () => {
+    test('JSON cannot be converted to other Formats - Returns 415 Unsupported Media Type', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const jsonString = JSON.stringify(
+        {
+          name: 'test',
+          age: 20,
+          marks: 55.2244,
+        },
+        null,
+        2
+      );
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'application/json')
+        .auth('testuser1', 'Testu1@2911')
+        .send(jsonString);
+
+      const id = postResponse.body.fragment.id;
+
+      const unsupportedFormats = ['html', 'md', 'png', 'jpg', 'gif', 'webp', 'unsupported'];
+
+      await Promise.all(
+        unsupportedFormats.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(415);
+
+          expect(response.body.status).toBe('error');
+          expect(response.body.error.code).toBe(415);
+          expect(response.body.error.message).toBeDefined();
+        })
+      );
+    });
+
+    test('JSON can be converted to ".txt" and itself ".json" ', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const jsonString = JSON.stringify(
+        {
+          name: 'test',
+          age: 20,
+          marks: 55.2244,
+        },
+        null,
+        2
+      );
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'application/json')
+        .auth('testuser1', 'Testu1@2911')
+        .send(jsonString);
+
+      const id = postResponse.body.fragment.id;
+
+      const extensions = ['txt', 'json'];
+
+      await Promise.all(
+        extensions.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(200);
+
+          expect(response.body).toBeDefined();
+
+          let expectedContentType;
+          let receivedContentType = contentType.parse(response.headers['content-type']).type;
+
+          if (ext === 'txt') {
+            expectedContentType = contentType.parse('text/plain').type;
+          } else {
+            expectedContentType = contentType.parse('application/json').type;
+          }
+
+          expect(receivedContentType).toBe(expectedContentType);
+        })
+      );
+    });
+  });
+
+  describe('HTML Fragment Conversion', () => {
+    test('HTML cannot be converted to other Formats - Returns 415 Unsupported Media Type', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const HTML = '<h1>Hello World</h1><p>This is Paragraph</p>';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/html')
+        .auth('testuser1', 'Testu1@2911')
+        .send(HTML);
+
+      const id = postResponse.body.fragment.id;
+
+      const unsupportedFormats = ['md', 'png', 'json', 'jpg', 'gif', 'webp', 'unsupported'];
+
+      await Promise.all(
+        unsupportedFormats.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(415);
+
+          expect(response.body.status).toBe('error');
+          expect(response.body.error.code).toBe(415);
+          expect(response.body.error.message).toBeDefined();
+        })
+      );
+    });
+    test('HTML can be converted to ".txt" and itself ".html"', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const HTML = '<h1>Hello World</h1><p>This is Paragraph</p>';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/html')
+        .auth('testuser1', 'Testu1@2911')
+        .send(HTML);
+
+      const id = postResponse.body.fragment.id;
+
+      const extensions = ['txt', 'html'];
+
+      await Promise.all(
+        extensions.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(200);
+
+          expect(response.body).toBeDefined();
+
+          let expectedContentType;
+          let receivedContentType = contentType.parse(response.headers['content-type']).type;
+
+          if (ext === 'txt') {
+            expectedContentType = contentType.parse('text/plain').type;
+          } else {
+            expectedContentType = contentType.parse('text/html').type;
+          }
+
+          expect(receivedContentType).toBe(expectedContentType);
+        })
+      );
+    });
+  });
+
+  describe('Markdown Fragment Conversion', () => {
+    test('Markdown cannot be converted to other Formats - Returns 415 Unsupported Media Type', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const MARKDOWN = '### Hello World \n\n ## New Heading \n **dskdajsk** ';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/markdown')
+        .auth('testuser1', 'Testu1@2911')
+        .send(MARKDOWN);
+
+      const id = postResponse.body.fragment.id;
+
+      const unsupportedFormats = ['png', 'json', 'jpg', 'gif', 'webp', 'unsupported'];
+
+      await Promise.all(
+        unsupportedFormats.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(415);
+
+          expect(response.body.status).toBe('error');
+          expect(response.body.error.code).toBe(415);
+          expect(response.body.error.message).toBeDefined();
+        })
+      );
+    });
+
+    test('Markdown can be converted to ".txt", ".html", and itself ".md"', async () => {
+      // Step 1: Create a fragment by making a POST request
+      const MARKDOWN = '### Hello World \n\n ## New Heading \n **dskdajsk** ';
+
+      const postResponse = await request(app)
+        .post('/v1/fragments')
+        .set('Content-Type', 'text/markdown')
+        .auth('testuser1', 'Testu1@2911')
+        .send(MARKDOWN);
+
+      const id = postResponse.body.fragment.id;
+
+      const extensions = ['txt', 'html', 'md'];
+
+      await Promise.all(
+        extensions.map(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(200);
+
+          expect(response.body).toBeDefined();
+
+          let expectedContentType;
+          let receivedContentType = contentType.parse(response.headers['content-type']).type;
+
+          switch (ext) {
+            case 'txt':
+              expectedContentType = contentType.parse('text/plain').type;
+              break;
+            case 'html':
+              expectedContentType = contentType.parse('text/html').type;
+              break;
+            default:
+              expectedContentType = contentType.parse('text/markdown').type;
+              break;
+          }
+
+          expect(receivedContentType).toBe(expectedContentType);
+        })
+      );
+    });
+  });
+});
+
+describe('GET /v1/fragments/:id.ext  (Images - PNG, JPG/JPEG, GIF, WEBP)', () => {
+  const imageTypes = ['png', 'jpg', 'gif', 'webp'];
+
+  imageTypes.forEach((ext) => {
+    describe(`${ext.toUpperCase()} Image Fragment Conversion`, () => {
+      test(`${ext.toUpperCase()} cannot be converted to unsupported formats - Returns 415 Unsupported Media Type`, async () => {
+        const imagePath = path.join(__dirname, `../images/test.${ext}`);
+        const imageBuffer = fs.readFileSync(imagePath);
+
+        if (ext === 'jpg') ext = 'jpeg';
+        const postResponse = await request(app)
+          .post('/v1/fragments')
+          .set('Content-Type', `image/${ext}`)
+          .auth('testuser1', 'Testu1@2911')
+          .send(imageBuffer);
+
+        const id = postResponse.body.fragment.id;
+
+        ['json', 'txt', 'html', 'md', 'unsupported'].forEach(async (ext) => {
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(415);
+
+          expect(response.body.status).toBe('error');
+          expect(response.body.error.code).toBe(415);
+          expect(response.body.error.message).toBeDefined();
+        });
+      });
+      test(`${ext.toUpperCase()} can be converted to supported image types ${imageTypes.join(
+        ', '
+      )}`, async () => {
+        if (ext === 'jpeg') ext = 'jpg';
+        const imagePath = path.join(__dirname, `../images/test.${ext}`);
+        const imageBuffer = fs.readFileSync(imagePath);
+
+        if (ext === 'jpg') ext = 'jpeg';
+        const postResponse = await request(app)
+          .post('/v1/fragments')
+          .set('Content-Type', `image/${ext}`)
+          .auth('testuser1', 'Testu1@2911')
+          .send(imageBuffer);
+
+        const id = postResponse.body.fragment.id;
+
+        imageTypes.forEach(async (ext2) => {
+          if (ext2 === 'jpg') ext2 = 'jpeg';
+          const response = await request(app)
+            .get(`/v1/fragments/${id}.${ext2}`)
+            .auth('testuser1', 'Testu1@2911')
+            .expect(200);
+
+          expect(response.body).toBeDefined();
+
+          let expectedContentType;
+          let receivedContentType = contentType.parse(response.headers['content-type']).type;
+
+          switch (ext2) {
+            case 'gif':
+              expectedContentType = contentType.parse('image/gif').type;
+              break;
+            case 'png':
+              expectedContentType = contentType.parse('image/png').type;
+              break;
+            case 'jpg':
+            case 'jpeg':
+              expectedContentType = contentType.parse('image/jpeg').type;
+              break;
+            default:
+              expectedContentType = contentType.parse('image/webp').type;
+              break;
+          }
+          expect(receivedContentType).toBe(expectedContentType);
+        });
+      });
+    });
   });
 });
 
@@ -103,6 +469,37 @@ describe('GET /v1/fragments/:id/info', () => {
     expect(response.body.fragment.size).toBe(size);
   });
 
+  test('Authenticated users should be able to get a fragment Metadata Even with Extension', async () => {
+    // Test case: Authenticated users should be able to get fragment metadata with the supplied ID
+
+    // Step 1: Create a fragment by making a POST request
+    const data = 'Fragment Data';
+    const postResponse = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/plain')
+      .auth('testuser1', 'Testu1@2911')
+      .send(data);
+    const id = postResponse.body.fragment.id;
+    const ownerId = postResponse.body.fragment.ownerId;
+    const size = postResponse.body.fragment.size;
+    const created = postResponse.body.fragment.created;
+    const updated = postResponse.body.fragment.updated;
+
+    // Step 2: Get the fragment Metadata by ID
+    const response = await request(app)
+      .get(`/v1/fragments/${id}.extension/info`)
+      .auth('testuser1', 'Testu1@2911')
+      .expect(200);
+
+    expect(response.body.status).toBe('ok');
+    expect(response.body.fragment.id).toBe(id);
+    expect(response.body.fragment.ownerId).toBe(ownerId);
+    expect(response.body.fragment.created).toBe(created);
+    expect(response.body.fragment.updated).toBe(updated);
+    expect(response.body.fragment.type).toBe('text/plain');
+    expect(response.body.fragment.size).toBe(size);
+  });
+
   test('Authenticated user should receive an error when an invalid ID is provided', async () => {
     // Test case: Authenticated user should receive an error when an invalid ID is provided
 
@@ -121,16 +518,13 @@ describe('GET /v1/fragments/:id/info', () => {
   test('Unauthenticated requests are denied', async () => {
     // Test case: Unauthenticated requests should be denied (return 401 Unauthorized)
 
-    const response = await request(app)
-      .get('/v1/fragments/:id/info')
-      .expect(401);
+    const response = await request(app).get('/v1/fragments/:id/info').expect(401);
 
     expect(response.body.status).toBe('error');
     expect(response.body.error.code).toBe(401);
     expect(response.body.error.message).toBe('Unauthorized');
   });
 });
-
 
 describe('GET /v1/fragments?expand', () => {
   // Test case: Authenticated users should get fragments array associated with the user when no expand query parameter is provided
@@ -227,4 +621,3 @@ describe('GET /v1/fragments?expand', () => {
     expect(typeof response.body.fragments[0]).toBe('string');
   });
 });
-
