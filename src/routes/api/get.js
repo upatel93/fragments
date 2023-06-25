@@ -5,6 +5,8 @@ const { createSuccessResponse, createErrorResponse } = require('../../response')
 //importing Fragment class..
 const { Fragment } = require('../../model/fragment');
 
+const logger = require('../../logger');
+
 // importing Utils Functions.
 const {
   hasExtension,
@@ -51,6 +53,7 @@ async function handleFragmentWithExtension(fragmentId, req, res) {
     }
   } catch (error) {
     // eror can  occure during conversion thus need to handle it
+    logger.error(error); // Log the error using Pino logger
     res.status(500).json(createErrorResponse(500, `An error occurred: ${error}`));
   }
 }
@@ -72,6 +75,7 @@ async function getFragmentsByUser(req, res) {
     let fragments = await Fragment.byUser(req.user, expand);
     res.status(200).json(createSuccessResponse({ fragments: fragments }));
   } catch (error) {
+    logger.error(error); // Log the error using Pino logger
     res.status(500).json(createErrorResponse(500, `An error occurred: ${error}`));
   }
 }
@@ -81,10 +85,10 @@ async function getFragmentInfoById(req, res) {
 
   try {
     let fragment;
-    if(hasExtension(fragmentId)){
+    if (hasExtension(fragmentId)) {
       const { id } = separateIdExtensionAndMediaType(fragmentId);
       fragment = await Fragment.byId(req.user, id);
-    }else fragment = await Fragment.byId(req.user, fragmentId);
+    } else fragment = await Fragment.byId(req.user, fragmentId);
     res.status(200).json(createSuccessResponse({ fragment: fragment }));
   } catch (error) {
     res

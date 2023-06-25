@@ -5,19 +5,22 @@ const { createErrorResponse, createSuccessResponse } = require('../../response')
 const { Fragment } = require('../../model/fragment');
 //const hashUser = require('../../hash');
 const { validateContentType } = require('../../model/data/utils');
-
+const logger = require('../../logger')
 // Handler function for creating a new fragment
 async function createFragment(req, res) {
+  // Get the owner ID by hashing the user and Content Type
+  const ownerId = req.user;
+  const contentType = req.headers['content-type'];
   try {
-    // Get the owner ID by hashing the user and Content Type
-    const ownerId = req.user
-    const contentType = req.headers['content-type'];
-
-    // Create a new fragment object with owner ID and content type
-    let data = new Fragment({ ownerId, type: contentType });
-
     // To check if the content type is valid
     await validateContentType(req.body, contentType);
+  } catch (err) {
+    res.status(415).send(createErrorResponse(415, err.message));
+    return; // Exit the function to prevent further execution
+  }
+  try {
+    // Create a new fragment object with owner ID and content type
+    let data = new Fragment({ ownerId, type: contentType });
 
     // Save the fragment object and set data
     await data.save();
@@ -36,10 +39,11 @@ async function createFragment(req, res) {
       })
     );
   } catch (err) {
-    // If an error occurs, send a 415 Unsupported Media Type response with the error message
-    res.status(415).send(createErrorResponse(415, err.message));
+    logger.error(err); // Log the error using Pino logger
+    res.status(500).send(createErrorResponse(500, err.message));
   }
 }
+
 
 module.exports = {
   createFragment,
