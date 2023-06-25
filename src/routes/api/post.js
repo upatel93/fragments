@@ -3,14 +3,14 @@
 // Import required modules and dependencies
 const { createErrorResponse, createSuccessResponse } = require('../../response');
 const { Fragment } = require('../../model/fragment');
-const hashUser = require('../../hash');
+//const hashUser = require('../../hash');
 const { validateContentType } = require('../../model/data/utils');
 
 // Handler function for creating a new fragment
 async function createFragment(req, res) {
   try {
     // Get the owner ID by hashing the user and Content Type
-    const ownerId = hashUser(req.user);
+    const ownerId = req.user
     const contentType = req.headers['content-type'];
 
     // Create a new fragment object with owner ID and content type

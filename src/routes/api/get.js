@@ -5,9 +5,6 @@ const { createSuccessResponse, createErrorResponse } = require('../../response')
 //importing Fragment class..
 const { Fragment } = require('../../model/fragment');
 
-// Hashing MOdule import
-const hashUser = require('../../hash');
-
 // importing Utils Functions.
 const {
   hasExtension,
@@ -38,7 +35,7 @@ async function getFragmentById(req, res) {
 
 async function handleFragmentWithExtension(fragmentId, req, res) {
   const { id, extension, mediaType } = separateIdExtensionAndMediaType(fragmentId);
-  let fragment = await Fragment.byId(hashUser(req.user), id);
+  let fragment = await Fragment.byId(req.user, id);
 
   try {
     if (isConversionPossible(fragment.type, extension)) {
@@ -59,7 +56,7 @@ async function handleFragmentWithExtension(fragmentId, req, res) {
 }
 
 async function handleFragmentWithoutExtension(fragmentId, req, res) {
-  let fragment = await Fragment.byId(hashUser(req.user), fragmentId);
+  let fragment = await Fragment.byId(req.user, fragmentId);
   let data = await fragment.getData();
   res.set('Content-Type', fragment.type);
   res.status(200).send(data);
@@ -72,7 +69,7 @@ function handleErrorResponse(res, statusCode, errorMessage) {
 async function getFragmentsByUser(req, res) {
   const expand = req.query.expand;
   try {
-    let fragments = await Fragment.byUser(hashUser(req.user), expand);
+    let fragments = await Fragment.byUser(req.user, expand);
     res.status(200).json(createSuccessResponse({ fragments: fragments }));
   } catch (error) {
     res.status(500).json(createErrorResponse(500, `An error occurred: ${error}`));
@@ -86,8 +83,8 @@ async function getFragmentInfoById(req, res) {
     let fragment;
     if(hasExtension(fragmentId)){
       const { id } = separateIdExtensionAndMediaType(fragmentId);
-      fragment = await Fragment.byId(hashUser(req.user), id);
-    }else fragment = await Fragment.byId(hashUser(req.user), fragmentId);
+      fragment = await Fragment.byId(req.user, id);
+    }else fragment = await Fragment.byId(req.user, fragmentId);
     res.status(200).json(createSuccessResponse({ fragment: fragment }));
   } catch (error) {
     res
