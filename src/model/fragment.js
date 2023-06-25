@@ -134,7 +134,7 @@ class Fragment {
   async setData(data) {
     if (!(Buffer.isBuffer(data) || data)) throw new Error('supplied data is not Buffer');
     this.size = data.byteLength;
-    this.updated = new Date().toISOString();
+    this.save();
     return writeFragmentData(this.ownerId, this.id, data);
   }
 
