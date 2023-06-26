@@ -2,12 +2,40 @@
 # Dockerfile for Containerizing Fragments Microservice   #
 ##########################################################
 
-# Use Node version v20.1.0
-FROM node:20.1.0
+# Stage 0: Build the application
+FROM node:20.1.0-alpine3.17@sha256:6e56967f8a4032f084856bad4185088711d25b2c2c705af84f57a522c84d123b AS build
+
+# Setting Environment var to production
+ENV NODE_ENV=production
+
+# Use /app as our working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install node dependencies
+RUN npm ci --only=production
+
+# Copy Source files
+COPY ./src ./src
+
+##################################################################################################################
+
+# Stage 1: Create the production image
+FROM node:20.1.0-alpine3.17@sha256:6e56967f8a4032f084856bad4185088711d25b2c2c705af84f57a522c84d123b AS production
+
+# Adding Curl for health check
+RUN apk update && \
+    apk add --no-cache curl
 
 # Metadata about the image
 LABEL maintainer="Ujjval Patel <upatel69@myseneca.ca>"
 LABEL description="Docker image for the Fragments Microservice using NodeJs"
+
+# Creat a non-root user and switch to that user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
 # We default to use port 8080 in our service
 ENV PORT=8080
@@ -16,44 +44,23 @@ ENV PORT=8080
 # https://docs.npmjs.com/cli/v8/using-npm/config#loglevel
 ENV NPM_CONFIG_LOGLEVEL=warn
 
-# Disable colour when run inside Docker
+# Disable color when run inside Docker
 # https://docs.npmjs.com/cli/v8/using-npm/config#color
 ENV NPM_CONFIG_COLOR=false
 
 # Use /app as our working directory
 WORKDIR /app
 
+# Copy built files from the build stage
+# I am keeping package.json files deliberately. 
+COPY --from=build --chown=appuser:appgroup /app ./
 
-###############################################
-#          Options for copying files          #
-###############################################
-
-# Option 1: explicit path - Copy the package.json and package-lock.json
-# files into /app. NOTE: the trailing `/` on `/app/`, which tells Docker
-# that `app` is a directory and not a file.
-# COPY package*.json /app/
-
-# Option 2: relative path - Copy the package.json and package-lock.json
-# files into the working dir (/app).  NOTE: this requires that we have
-# already set our WORKDIR in a previous step.
-# COPY package*.json ./
-
-# Option 3: explicit filenames - Copy the package.json and package-lock.json
-# files into the working dir (/app), using full paths and multiple source
-# files.  All of the files will be copied into the working dir `./app`
-COPY package.json package-lock.json ./
-
-# Install node dependencies defined in package-lock.json
-RUN npm install
-
-# Copy src to /app/src/
-COPY ./src ./src
-
-# Copy our HTPASSWD file
-COPY ./tests/.htpasswd ./tests/.htpasswd
-
-# Start the container by running our server
-CMD npm start
-
-# We run our service on port 8080
+# Expose the application port
 EXPOSE 8080
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 \
+    CMD curl --fail localhost:8080 || exit 1
+
+# Start the application
+CMD ["node", "src/index.js"]
