@@ -201,15 +201,16 @@ module.exports.convertFragment = async (rawBinaryData, fromType, toExt, toType) 
  * @returns {Promise<void>} Resolves if the content type is valid.
  */
 module.exports.validateContentType = async (reqBody, contentTypeHeader) => {
-  if (!Buffer.isBuffer(reqBody)) {
-    throw new Error('Invalid request body. Expected a Buffer.');
-  }
 
   if (typeof contentTypeHeader !== 'string') {
     throw new Error('Invalid content type header. Expected a string.');
   }
 
   const { type } = contentType.parse(contentTypeHeader.toLowerCase());
+
+  if (!Buffer.isBuffer(reqBody)) {
+    throw new Error(`Unsupported content type ${type}`);
+  }
 
   if (type === 'application/json') {
     try {

@@ -5,7 +5,9 @@ const { createErrorResponse, createSuccessResponse } = require('../../response')
 const { Fragment } = require('../../model/fragment');
 //const hashUser = require('../../hash');
 const { validateContentType } = require('../../model/data/utils');
-const logger = require('../../logger')
+const logger = require('../../logger');
+
+
 // Handler function for creating a new fragment
 async function createFragment(req, res) {
   // Get the owner ID by hashing the user and Content Type
@@ -43,7 +45,6 @@ async function createFragment(req, res) {
     res.status(500).send(createErrorResponse(500, err.message));
   }
 }
-
 
 module.exports = {
   createFragment,
