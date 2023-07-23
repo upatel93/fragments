@@ -35,7 +35,7 @@ describe('POST /v1/fragments (Credential, Unauthorized, Unauthenticated, Plain T
     expect(res.body.fragment.size).toBe(Buffer.byteLength('fragment Data'));
     expect(res.body.fragment.created).toBeDefined();
     expect(res.body.fragment.updated).toBeDefined();
-    expect(res.headers.location).toBe(`${process.env.API_URL}/v1/fragment/${res.body.fragment.id}`);
+    expect(res.headers.location).toBe(`${process.env.API_URL}/v1/fragments/${res.body.fragment.id}`);
   });
 
   // Using a valid username/password pair with unsupported mediatype should get 415 error

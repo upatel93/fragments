@@ -32,7 +32,7 @@ async function createFragment(req, res) {
     const baseUrl = req.protocol + '://' + req.get('host');
 
     // Set the Location header with the URL of the newly created fragment
-    res.set('Location', `${process.env.API_URL || baseUrl}/v1/fragment/${data.id}`);
+    res.set('Location', `${process.env.API_URL || baseUrl}/v1/fragments/${data.id}`);
 
     // Send the success response with the created fragment data
     res.status(201).json(
