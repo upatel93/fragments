@@ -55,6 +55,10 @@ WORKDIR /app
 # I am keeping package.json files deliberately. 
 COPY --from=build --chown=appuser:appgroup /app ./
 
+# Copy the .htpasswd file from the same directory as the Dockerfile into the working directory (/app)
+COPY --chown=appuser:appgroup tests/.htpasswd .
+
+
 # Expose the application port
 EXPOSE 8080
 
