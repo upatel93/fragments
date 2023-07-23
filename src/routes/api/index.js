@@ -17,6 +17,7 @@ const { Fragment } = require('../../model/fragment');
 // Import route handlers
 const getHandlers = require('./get');
 const postHandlers = require('./post');
+const putHandelrs = require('./put');
 const deleteHandlers = require('./delete');
 
 
@@ -57,7 +58,7 @@ router.post('/fragments', rawBody(), postHandlers.createFragment);
 
 
 // PUT route 
-// to be implemented later
+router.put('/fragments/:id',rawBody(),putHandelrs.updateFragment)
 
 // Delete Route
 router.delete('/fragments/:id',deleteHandlers.deleteFragmentById);
