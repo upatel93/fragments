@@ -15,7 +15,7 @@ describe('POST /v1/fragments (Credential, Unauthorized, Unauthenticated, Plain T
 
   // If the wrong username/password pair are used (no such user), it should be forbidden
   test('Incorrect credentials are denied', () =>
-    request(app).get('/v1/fragments').auth('invalid@email.com', 'incorrect_password').expect(401));
+    request(app).post('/v1/fragments').auth('invalid@email.com', 'incorrect_password').expect(401));
 
   // Using a valid username/password pair should give a success result with a .fragments array
   test('Authenticated users get a fragment with ok status', async () => {
