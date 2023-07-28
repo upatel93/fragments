@@ -92,6 +92,38 @@ describe('PUT /v1/fragments/:id - Text Fragments (Text, Markdown, HTML, JSON)', 
     expect(Date.parse(textPutRes.body.fragment.updated)).toBeGreaterThan(Date.parse(textUpdated)); // updated should be greater than previously updated/created fragment.
   });
 
+  test('Any data with ID EXTENSION can be replaced with SAME CONTENT TYPE with 200 success response. ', async () => {
+    // Test Text Fragment
+    const textPostRes = await request(app)
+      .post('/v1/fragments/')
+      .set('Content-Type', 'text/plain')
+      .auth('testuser1', 'Testu1@2911')
+      .send('fragment Data@12345_2-!@#$%%&^*&');
+
+    const textId = textPostRes.body.fragment.id;
+    const textCreated = textPostRes.body.fragment.created;
+    const textUpdated = textPostRes.body.fragment.updated;
+
+    const newTextData = 'New_fragment Data@12481819345_2-!df@f#$%%&^*&';
+
+    const textPutRes = await request(app)
+      .put(`/v1/fragments/${textId}.txt`)
+      .set('Content-Type', 'text/plain')
+      .auth('testuser1', 'Testu1@2911')
+      .send(newTextData);
+
+    expect(textPutRes.statusCode).toBe(200);
+    expect(textPutRes.body.status).toBe('ok');
+    expect(textPutRes.body.fragment).toBeDefined();
+    expect(typeof textPutRes.body.fragment).toBe('object');
+    expect(textPutRes.body.fragment.id).toBeDefined();
+    expect(textPutRes.body.fragment.ownerId).toBeDefined();
+    expect(textPutRes.body.fragment.type).toBe('text/plain');
+    expect(textPutRes.body.fragment.size).toBe(Buffer.byteLength(newTextData));
+    expect(textPutRes.body.fragment.created).toBe(textCreated); // created should remain the same
+    expect(Date.parse(textPutRes.body.fragment.updated)).toBeGreaterThan(Date.parse(textUpdated)); // updated should be greater than previously updated/created fragment.
+  });
+
   const textResponse = {
     'application/json': JSON.stringify({ key: 'value' }),
     'text/html': '<h1>hello</h1>',
