@@ -7,6 +7,7 @@ const app = require('../../src/app');
 
 // Get the version and author from our package.json
 const { version, author } = require('../../package.json');
+const {hostname} = require('os');
 
 describe('/ health check', () => {
   test('should return HTTP 200 response', async () => {
@@ -29,6 +30,7 @@ describe('/ health check', () => {
     expect(res.body.author).toEqual(author);
     expect(res.body.githubUrl.startsWith('https://github.com/')).toBe(true);
     expect(res.body.version).toEqual(version);
+    expect(res.body.hostname).toEqual(hostname());
   });
 
   test('GET /nonexistent should return status 404 and an error message', async () => {

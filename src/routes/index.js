@@ -1,6 +1,7 @@
 // src/routes/index.js
 
 const express = require('express');
+const { hostname } = require('os');
 
 // Our authentication middleware
 const { authenticate } = require('../authorization');
@@ -34,6 +35,7 @@ router.get('/', (req, res) => {
       author,
       githubUrl: 'https://github.com/upatel93/fragments',
       version,
+      hostname : hostname(),
     })
   );
 });
