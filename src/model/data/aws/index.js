@@ -141,10 +141,14 @@ async function deleteFragment(ownerId, id) {
     // Delete metadata from memory database
     await metadata.del(ownerId, id);
   } catch (error) {
-    // If anything goes wrong, log enough info that we can debug
-    const { Bucket, Key } = params;
-    console.error({ error, Bucket, Key }, 'Error deleting fragment data from S3');
-    throw new Error('Unable to delete fragment data from S3');
+    if (error.message.includes('missing entry')) {
+      throw error;
+    } else {
+      // If anything goes wrong other than known errors, log enough info that we can debug
+      const { Bucket, Key } = params;
+      console.error({ error, Bucket, Key }, 'Error deleting fragment data from S3');
+      throw new Error('Unable to delete fragment data from S3');
+    }
   }
 }
 
