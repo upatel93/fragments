@@ -59,7 +59,7 @@
   ],
   "placementConstraints": [],
   "memory": "512",
-  "taskRoleArn": null,
+  "taskRoleArn": "arn:aws:iam::374953553278:role/LabRole",
   "compatibilities": ["EC2", "FARGATE"],
   "taskDefinitionArn": "arn:aws:ecs:us-east-1:374953553278:task-definition/fragments-task:1",
   "family": "fragments-task",
