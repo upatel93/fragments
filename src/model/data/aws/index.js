@@ -171,16 +171,25 @@ async function deleteFragment(ownerId, id) {
     TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
     Key: { ownerId, id },
   };
+
+  // Configure our GET params, with the name of the table and key (partition key + sort key)
+  const params = {
+    TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
+    Key: { ownerId, id },
+  };
+
   try {
     // Create and send a DeleteObjectCommand to S3
     await s3Client.send(new DeleteObjectCommand(s3Params));
 
-    // Create and send a DeleteCommand to DynamoDB
-    const data = await ddbDocClient.send(new DeleteCommand(dynamoDBParams));
-
-    if (data.ConsumedCapacity) {
+    // First we try to get the data if it is available than we delete it
+    // else we will throw error of missing entry.
+    const data = await ddbDocClient.send(new GetCommand(params));
+    if (data.Item) {
+      await ddbDocClient.send(new DeleteCommand(dynamoDBParams));
+    } else {
       throw new Error('missing entry');
-    } 
+    }
   } catch (error) {
     if (error.message === 'missing entry') {
       throw error;
