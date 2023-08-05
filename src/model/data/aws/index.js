@@ -180,7 +180,7 @@ async function deleteFragment(ownerId, id) {
     await ddbDocClient.send(new DeleteCommand(dynamoDBParams));
   } catch (error) {
     if (error.code === 'NoSuchKey') {
-      throw new Error('Missing fragment data');
+      throw new Error('Missing fragment data or missing entry');
     } else {
       // If any other error occurs, log information for debugging
       console.error({
