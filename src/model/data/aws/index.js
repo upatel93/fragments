@@ -158,45 +158,46 @@ async function listFragments(ownerId, expand = false) {
   }
 }
 
-// Delete a fragment's data from the S3 bucket and DynamoDB table. Returns a Promise.
+// Delete a fragment's data from the S3 bucket. Returns a Promise
 async function deleteFragment(ownerId, id) {
-  // Prepare the parameters for the DeleteObjectCommand for S3
-  const s3Params = {
+  // Prepare the parameters for the DeleteObjectCommand
+  const paramsS3 = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: `${ownerId}/${id}`, // Object key is a combination of ownerId and fragment id
+    // Our key will be a mix of the ownerId and fragment id, written as a path
+    Key: `${ownerId}/${id}`,
   };
 
-  // Prepare the parameters for the DeleteCommand for DynamoDB
-  const dynamoDBParams = {
+  const paramsDynamoDB = {
     TableName: process.env.AWS_DYNAMODB_TABLE_NAME,
     Key: { ownerId, id },
   };
 
-  try {
-    // Create and send a DeleteObjectCommand to S3
-    await s3Client.send(new DeleteObjectCommand(s3Params));
+  const commandDynamoDB = new DeleteCommand(paramsDynamoDB);
 
-    // Create and send a DeleteCommand to DynamoDB
-    await ddbDocClient.send(new DeleteCommand(dynamoDBParams));
+  // Create a DeleteObjectCommand to send to S3
+  const commandS3 = new DeleteObjectCommand(paramsS3);
+  try {
+    // Use the S3 client to send the command and delete the object
+    await s3Client.send(commandS3);
+
+    try {
+      await ddbDocClient.send(commandDynamoDB);
+    } catch (error) {
+      const { TableName, Key } = paramsDynamoDB;
+      console.error({ error , TableName, Key});
+      throw new Error('missing entry');
+    }
   } catch (error) {
-    if (error.code === 'NoSuchKey') {
-      throw new Error('Missing fragment data or missing entry');
+    if (error.message.includes('missing entry')) {
+      throw error;
     } else {
-      // If any other error occurs, log information for debugging
-      console.error({
-        error: 'Error deleting fragment data',
-        ownerId,
-        id,
-        S3Bucket: s3Params.Bucket,
-        S3Key: s3Params.Key,
-        DynamoDBTableName: dynamoDBParams.TableName,
-        DynamoDBKey: dynamoDBParams.Key,
-      });
-      throw new Error('Unable to delete fragment data');
+      // If anything goes wrong other than known errors, log enough info that we can debug
+      const { Bucket, Key } = paramsS3;
+      console.error({ error, Bucket, Key }, 'Error deleting fragment data from S3');
+      throw new Error('Unable to delete fragment data from S3');
     }
   }
 }
-
 
 module.exports.listFragments = listFragments;
 module.exports.writeFragment = writeFragment;
