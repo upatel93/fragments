@@ -37,7 +37,7 @@ async function getFragmentById(req, res) {
 
 async function handleFragmentWithExtension(fragmentId, req, res) {
   const { id, extension, mediaType } = separateIdExtensionAndMediaType(fragmentId);
-  let fragment = await Fragment.byId(req.user, id);
+  let fragment = new Fragment(await Fragment.byId(req.user, id));
 
   try {
     if (isConversionPossible(fragment.type, extension)) {
@@ -59,7 +59,7 @@ async function handleFragmentWithExtension(fragmentId, req, res) {
 }
 
 async function handleFragmentWithoutExtension(fragmentId, req, res) {
-  let fragment = await Fragment.byId(req.user, fragmentId);
+  let fragment = new Fragment(await Fragment.byId(req.user, fragmentId));
   let data = await fragment.getData();
   res.set('Content-Type', fragment.type);
   res.status(200).send(data);
