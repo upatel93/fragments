@@ -38,7 +38,7 @@ const formats = {
 };
 
 class Fragment {
-  constructor({ ownerId, type, id, size = 0 }) {
+  constructor({ ownerId, type, id, size = 0, created, updated }) {
     // removed created and updated paramaters due to eslint.
     if (!ownerId || !type) {
       throw new Error('ownerId and type are required');
@@ -68,8 +68,8 @@ class Fragment {
     this.id = id || randomUUID(); // If id is not provided, we will create randomUUID
     this.ownerId = ownerId;
     // created and updated are removed from paramaters but its part of fragment class.
-    this.created = new Date().toISOString(); // setting date string
-    this.updated = new Date().toISOString();
+    this.created = created || new Date().toISOString(); // setting date string
+    this.updated = updated || new Date().toISOString();
     this.type = type;
     this.size = size;
   }

@@ -31,7 +31,7 @@ async function updateFragment(req, res) {
     // Fetch the fragment by id, and check if it exists
     let fragment;
     try {
-      fragment = await Fragment.byId(req.user, id);
+      fragment = new Fragment(await Fragment.byId(req.user, id));
     } catch (error) {
       return res.status(404).json(createErrorResponse(404, `Fragment with ID ${id} not found.`));
     }
